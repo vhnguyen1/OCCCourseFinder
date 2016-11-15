@@ -20,6 +20,7 @@ public class CourseSearchActivity extends AppCompatActivity {
         db.importCoursesFromCSV("courses.csv");
         db.importInstructorsFromCSV("instructors.csv");
         //TODO: Create the method importOfferingsFromCSV, then use it in this activity.
+        db.importOfferingsFromCSV("offerings.csv");
 
         ArrayList<Course> allCourses = db.getAllCourses();
         Log.i("OCC Course Selector", allCourses.toString());
@@ -28,6 +29,7 @@ public class CourseSearchActivity extends AppCompatActivity {
         Log.i("OCC Course Selector", allInstructors.toString());
 
         //TODO: Get all the offerings from the database, then print them out to the Log
-
+        ArrayList<Offering> allOfferings = db.getAllOfferings();
+        Log.i("OCC Course Selector", allOfferings.toString());
     }
 }

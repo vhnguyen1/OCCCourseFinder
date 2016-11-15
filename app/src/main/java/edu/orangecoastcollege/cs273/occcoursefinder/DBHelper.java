@@ -74,11 +74,12 @@ class DBHelper extends SQLiteOpenHelper {
                 + FIELD_SEMESTER_CODE + " INTEGER, "
                 + FIELD_COURSE_ID + " INTEGER, "
                 + FIELD_INSTRUCTOR_ID + " INTEGER, "
-                + "FOREIGN KEY(" + FIELD_COURSE_ID + ") REFERENCES" + COURSES_TABLE + "(" + FIELD_COURSE_ID + ")"
-                + "FOREIGN KEY(" + FIELD_INSTRUCTOR_ID + ") REFERENCES" + INSTRUCTORS_TABLE + "(" + FIELD_INSTRUCTOR_ID + "))";
+                + "FOREIGN KEY(" + FIELD_COURSE_ID + ") REFERENCES " + COURSES_TABLE + "(" + COURSES_KEY_FIELD_ID + ")"
+                + "FOREIGN KEY(" + FIELD_INSTRUCTOR_ID + ") REFERENCES " + INSTRUCTORS_TABLE + "(" + INSTRUCTORS_KEY_FIELD_ID + "))";
         // String ends up being CREATE TABLE Offerings(crn INTEGER PRIMARY KEY,
         // semester_code INTEGER, course_id INTEGER, instructor_id INTEGER,
-        // FOREIGN KEY(course_id) REFERENCES Courses(id));
+        // FOREIGN KEY(course_id) REFERENCES Courses(id)
+        // FOREIGN KEY(instructor_id) REFERENCES Instructors(id));
         database.execSQL(createQuery);
     }
 
@@ -88,6 +89,7 @@ class DBHelper extends SQLiteOpenHelper {
                           int newVersion) {
         database.execSQL("DROP TABLE IF EXISTS " + COURSES_TABLE);
         database.execSQL("DROP TABLE IF EXISTS " + INSTRUCTORS_TABLE);
+        database.execSQL("DROP TABLE IF EXISTS " + OFFERINGS_TABLE);
         //TODO:  Drop the Offerings table
         onCreate(database);
     }
@@ -279,18 +281,44 @@ class DBHelper extends SQLiteOpenHelper {
     //TODO:  deleteAllOfferings, updateOffering, and getOffering
     //TODO:  Use the Courses and Instructors methods above as a guide.
 
+    public void addOffering(int crn, int semesterCode, int courseID, int instructorID) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
 
+        values.put(OFFERINGS_KEY_FIELD_ID, crn);
+        values.put(FIELD_SEMESTER_CODE, semesterCode);
+        values.put(FIELD_COURSE_ID, courseID);
+        values.put(FIELD_INSTRUCTOR_ID, instructorID);
 
+        db.insert(OFFERINGS_TABLE, null, values);
 
+        // CLOSE THE DATABASE CONNECTION
+        db.close();
+    }
 
+    public ArrayList<Offering> getAllOfferings() {
+        ArrayList<Offering> offeringsList = new ArrayList<>();
+        SQLiteDatabase database = this.getReadableDatabase();
+        Cursor cursor = database.query(
+                OFFERINGS_TABLE,
+                new String[]{OFFERINGS_KEY_FIELD_ID, FIELD_SEMESTER_CODE, FIELD_COURSE_ID,
+                        FIELD_INSTRUCTOR_ID}, null, null, null, null, null, null);
 
-
-
-
-
-
-
-
+        //COLLECT EACH ROW IN THE TABLE
+        if (cursor.moveToFirst()) {
+            do {
+                Course course = this.getCourse(cursor.getInt(2));
+                Instructor instructor = this.getInstructor(cursor.getInt(3));
+                Offering offering =
+                        new Offering(cursor.getInt(0),
+                                cursor.getInt(1),
+                                course,
+                                instructor);
+                offeringsList.add(offering);
+            } while (cursor.moveToNext());
+        }
+        return offeringsList;
+    }
 
     //********** IMPORT FROM CSV OPERATIONS:  Courses, Instructors and Offerings
     //TODO:  Write the code for the import OfferingsFromCSV method.
@@ -359,5 +387,36 @@ class DBHelper extends SQLiteOpenHelper {
     }
 
     //TODO:  Write the code for the importOfferingsFromCSV method
+    public boolean importOfferingsFromCSV(String csvFileName) {
+        AssetManager manager = mContext.getAssets();
+        InputStream inStream;
+        try {
+            inStream = manager.open(csvFileName);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        BufferedReader buffer = new BufferedReader(new InputStreamReader(inStream));
+        String line;
+        try {
+            while ((line = buffer.readLine()) != null) {
+                String[] fields = line.split(",");
+                if (fields.length != 4) {
+                    Log.d("OCC Course Finder", "Skipping Bad CSV Row: " + Arrays.toString(fields));
+                    continue;
+                }
+                int crn = Integer.parseInt(fields[0].trim());
+                int semesterCode = Integer.parseInt(fields[1].trim());
+                int courseID = Integer.parseInt(fields[2].trim());
+                int instructorID = Integer.parseInt(fields[3].trim());
+                addOffering(crn, semesterCode, courseID, instructorID);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
 
 }
