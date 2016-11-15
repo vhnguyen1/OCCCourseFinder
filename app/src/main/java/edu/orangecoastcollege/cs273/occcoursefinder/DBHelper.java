@@ -68,9 +68,18 @@ class DBHelper extends SQLiteOpenHelper {
         database.execSQL(createQuery);
 
         //TODO:  Write the query to create the relationship table "Offerings"
-        // String ends up being CREATE TABLE Offerings(crn INTEGER PRIMARY KEY AUTOINCREMENT,
-        // semester_code INTEGER, course_id INTEGER, instructor_id INTEGER);
         //TODO:  Make sure to include foreign keys to the Courses and Instructors tables
+        createQuery = "CREATE TABLE " + OFFERINGS_TABLE + "("
+                + OFFERINGS_KEY_FIELD_ID + " INTEGER PRIMARY KEY, "
+                + FIELD_SEMESTER_CODE + " INTEGER, "
+                + FIELD_COURSE_ID + " INTEGER, "
+                + FIELD_INSTRUCTOR_ID + " INTEGER, "
+                + "FOREIGN KEY(" + FIELD_COURSE_ID + ") REFERENCES" + COURSES_TABLE + "(" + FIELD_COURSE_ID + ")"
+                + "FOREIGN KEY(" + FIELD_INSTRUCTOR_ID + ") REFERENCES" + INSTRUCTORS_TABLE + "(" + FIELD_INSTRUCTOR_ID + "))";
+        // String ends up being CREATE TABLE Offerings(crn INTEGER PRIMARY KEY,
+        // semester_code INTEGER, course_id INTEGER, instructor_id INTEGER,
+        // FOREIGN KEY(course_id) REFERENCES Courses(id));
+        database.execSQL(createQuery);
     }
 
     @Override
